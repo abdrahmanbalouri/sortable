@@ -1,5 +1,8 @@
 let heroesData = []
 let currentPage = 1
+let sortColumn = "name"
+let sortDirection = "asc"
+let searchValue = ""
 
 async function fetchData() {
   const response = await fetch("https://rawcdn.githack.com/akabab/superhero-api/0.2.0/api/all.json")
@@ -9,6 +12,71 @@ async function fetchData() {
     currentPage = 1
     updateView()
   })
+}
+
+function getPageSize() {
+  const value = document.getElementById("pageSizeSelect").value
+  if (value === "all") {
+    return heroesData.length
+  } else {
+    return parseInt(value)
+  }
+}
+
+function updateView() {
+  let filtered = heroesData
+  if (searchValue) {
+    filtered = heroesData.filter(hero =>
+      hero.name && hero.name.toLowerCase().includes(searchValue)
+    )
+  }
+  filtered = simpleSort(filtered, sortColumn, sortDirection)
+  loadData(filtered)
+}
+
+function simpleSort(data, column, direction) {
+  return [...data].sort((a, b) => {
+    let va = getColValue(a, column)
+    let vb = getColValue(b, column)
+    // Missing values last
+    if (!va && !vb) return 0
+    if (!va) return 1
+    if (!vb) return -1
+    // Numeric sort if both are numbers
+    if (!isNaN(va) && !isNaN(vb)) {
+      va = Number(va)
+      vb = Number(vb)
+      return direction === "asc" ? va - vb : vb - va
+    }
+    // String sort
+    va = String(va).toLowerCase()
+    vb = String(vb).toLowerCase()
+    if (va < vb) return direction === "asc" ? -1 : 1
+    if (va > vb) return direction === "asc" ?1  : -1
+    return 0
+  })
+}
+
+function getColValue(hero, column) {
+  switch (column) {
+    case "name": return hero.name
+    case "fullName": return hero.biography.fullName
+    case "intelligence": return hero.powerstats.intelligence
+    case "strength": return hero.powerstats.strength
+    case "speed": return hero.powerstats.speed
+    case "durability": return hero.powerstats.durability
+    case "power": return hero.powerstats.power
+    case "combat": return hero.powerstats.combat
+    case "race": return hero.appearance.race
+    case "gender": return hero.appearance.gender
+    case "height":
+      return hero.appearance.height && hero.appearance.height[1] ? parseInt(hero.appearance.height[1]) : ""
+    case "weight":
+      return hero.appearance.weight && hero.appearance.weight[1] ? parseInt(hero.appearance.weight[1]) : ""
+    case "placeOfBirth": return hero.biography.placeOfBirth
+    case "alignment": return hero.biography.alignment
+    default: return ""
+  }
 }
 
 function loadData(heroes) {
@@ -23,19 +91,6 @@ function loadData(heroes) {
   }
 }
 
-function getPageSize() {
-  const value = document.getElementById("pageSizeSelect").value
-  if (value === "all") {
-    return heroesData.length
-  } else {
-    return parseInt(value)
-  }
-}
-
-function updateView() {
-  loadData(heroesData)
-}
-
 function renderTable(data) {
   const tableContainer = document.getElementById("tableContainer")
   tableContainer.innerHTML = ""
@@ -43,32 +98,23 @@ function renderTable(data) {
   const thead = document.createElement("thead")
   const tbody = document.createElement("tbody")
 
-  // Create search input
-  // const searchContainer = document.createElement("div")
-  // searchContainer.innerHTML = `
-  //   <label for="searchInput">Search:</label>
-  //   <input type="text" id="searchInput" placeholder="Type a hero name" />
-  // `
-  // tableContainer.innerHTML = ""
-  // tableContainer.appendChild(searchContainer)
-
   thead.innerHTML = `
     <tr>
       <th>Icon</th>
-      <th>Name</th>
-      <th>Full Name</th>
-      <th>Intelligence</th>
-      <th>Strength</th>
-      <th>Speed</th>
-      <th>Durability</th>
-      <th>Power</th>
-      <th>Combat</th>
-      <th>Race</th>
-      <th>Gender</th>
-      <th>Height</th>
-      <th>Weight</th>
-      <th>Place of Birth</th>
-      <th>Alignment</th>
+      <th data-col="name" class="sortable">Name${sortColumn === "name" ? sortArrow() : ""}</th>
+      <th data-col="fullName" class="sortable">Full Name${sortColumn === "fullName" ? sortArrow() : ""}</th>
+      <th data-col="intelligence" class="sortable">Intelligence${sortColumn === "intelligence" ? sortArrow() : ""}</th>
+      <th data-col="strength" class="sortable">Strength${sortColumn === "strength" ? sortArrow() : ""}</th>
+      <th data-col="speed" class="sortable">Speed${sortColumn === "speed" ? sortArrow() : ""}</th>
+      <th data-col="durability" class="sortable">Durability${sortColumn === "durability" ? sortArrow() : ""}</th>
+      <th data-col="power" class="sortable">Power${sortColumn === "power" ? sortArrow() : ""}</th>
+      <th data-col="combat" class="sortable">Combat${sortColumn === "combat" ? sortArrow() : ""}</th>
+      <th data-col="race" class="sortable">Race${sortColumn === "race" ? sortArrow() : ""}</th>
+      <th data-col="gender" class="sortable">Gender${sortColumn === "gender" ? sortArrow() : ""}</th>
+      <th data-col="height" class="sortable">Height${sortColumn === "height" ? sortArrow() : ""}</th>
+      <th data-col="weight" class="sortable">Weight${sortColumn === "weight" ? sortArrow() : ""}</th>
+      <th data-col="placeOfBirth" class="sortable">Place of Birth${sortColumn === "placeOfBirth" ? sortArrow() : ""}</th>
+      <th data-col="alignment" class="sortable">Alignment${sortColumn === "alignment" ? sortArrow() : ""}</th>
     </tr>
   `
 
@@ -97,6 +143,25 @@ function renderTable(data) {
   table.appendChild(thead)
   table.appendChild(tbody)
   tableContainer.appendChild(table)
+
+  // Add sort event listeners
+  thead.querySelectorAll(".sortable").forEach(th => {
+    th.style.cursor = "pointer"
+    th.addEventListener("click", () => {
+      const col = th.getAttribute("data-col")
+      if (sortColumn === col) {
+        sortDirection = sortDirection === "asc" ? "desc" : "asc"
+      } else {
+        sortColumn = col
+        sortDirection = "asc"
+      }
+      updateView()
+    })
+  })
+}
+
+function sortArrow() {
+  return sortDirection === "asc" ? " ▲" : " ▼"
 }
 
 function renderPagination(totalPages) {
@@ -114,29 +179,20 @@ function renderPagination(totalPages) {
     pagination.appendChild(btn)
   }
 }
+
 let search = document.getElementById('searchInput')
 let timeout
 
 search.addEventListener('input', () => {
   clearTimeout(timeout)
   timeout = setTimeout(() => {
-    const searchValue = search.value.trim().toLowerCase()
-    const pageSizeSelect = document.getElementById("pageSizeSelect")
-    if (pageSizeSelect.value !== "all") {
-      pageSizeSelect.value = "all"
-      currentPage = 1
-      updateView()
-
-    }
-
-    document.querySelectorAll("table tbody tr").forEach(row => {
-      const nameCell = row.querySelector("td:nth-child(2)")
-      const name = nameCell.textContent.toLowerCase()
-      row.style.display = name.includes(searchValue) ? "" : "none"
-    })
+    searchValue = search.value.trim().toLowerCase()
+    currentPage = 1
+    updateView()
   }, 300)
 })
 
-
-
-window.onload = fetchData
+window.onload = () => {
+  
+  fetchData()
+}
