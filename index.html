@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Heroes Table</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <label for="pageSizeSelect">Page Size:</label>
+  <select id="pageSizeSelect">
+    <option value="10">10</option>
+    <option value="20" selected>20</option>
+    <option value="50">50</option>
+    <option value="100">100</option>
+    <option value="all">All</option>
+  </select>
+  <div id="searchbar">
+    <label for="searchInput">Search:</label>
+    <input type="text" id="searchInput" placeholder="Type a hero name" />
+  </div>
+  <div id="tableContainer"></div>
+  <div id="paginationControls"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
