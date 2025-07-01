@@ -1,3 +1,4 @@
+
 let heroesData = []
 let currentPage = 1
 let sortColumn = "name"
@@ -5,8 +6,15 @@ let sortDirection = "asc"
 let searchValue = ""
 
 async function fetchData() {
-  const response = await fetch("https://rawcdn.githack.com/akabab/superhero-api/0.2.0/api/all.json")
-  heroesData = await response.json()
+  try {
+    const response = await fetch("https://rawcdn.githack.com/akabab/superhero-api/0.2.0/api/all.json")
+
+    heroesData = await response.json()
+    // console.log(heroesData);
+  } catch {
+    document.body.innerHTML = "error ajmi "
+  }
+  
   updateView()
   document.getElementById("pageSizeSelect").addEventListener("change", () => {
     currentPage = 1
@@ -38,11 +46,9 @@ function simpleSort(data, column, direction) {
   return [...data].sort((a, b) => {
     let va = getColValue(a, column)
     let vb = getColValue(b, column)
-    // Missing values last
-    if (!va && !vb) return 0
-    if (!va) return 1
-    if (!vb) return -1
-    // Numeric sort if both are numbers
+    if ( va === "" && vb === "") return 0
+    if (va === "") return 1
+    if (vb === "") return -1
     if (!isNaN(va) && !isNaN(vb)) {
       va = Number(va)
       vb = Number(vb)
@@ -70,12 +76,36 @@ function getColValue(hero, column) {
     case "race": return hero.appearance.race
     case "gender": return hero.appearance.gender
     case "height":
-      return hero.appearance.height && hero.appearance.height[1] ? parseInt(hero.appearance.height[1]) : ""
+      return hero.appearance.height && hero.appearance.height[1] ? height(hero.appearance.height[1]) : ""
     case "weight":
-      return hero.appearance.weight && hero.appearance.weight[1] ? parseInt(hero.appearance.weight[1]) : ""
+      return hero.appearance.weight && hero.appearance.weight[1] ? parsweight(hero.appearance.weight[1])  : ""
+      
     case "placeOfBirth": return hero.biography.placeOfBirth
     case "alignment": return hero.biography.alignment
     default: return ""
+  }
+}
+
+function parsweight(params) {
+
+
+   params =  params.replace(",", "")
+
+  if (params.includes("tons")) {
+    return  parseInt(params) * 1000
+  }else{
+    return  parseInt(params)
+  }
+  
+}
+
+function height(params) {
+     params =  params.replace(",", "")
+
+  if (params.includes("meters")) {
+    return  parseInt(params) * 100
+  }else{
+    return  parseInt(params)
   }
 }
 
@@ -100,22 +130,27 @@ function renderTable(data) {
 
   thead.innerHTML = `
     <tr>
-      <th>Icon</th>
-      <th data-col="name" class="sortable">Name${sortColumn === "name" ? sortArrow() : ""}</th>
-      <th data-col="fullName" class="sortable">Full Name${sortColumn === "fullName" ? sortArrow() : ""}</th>
-      <th data-col="intelligence" class="sortable">Intelligence${sortColumn === "intelligence" ? sortArrow() : ""}</th>
-      <th data-col="strength" class="sortable">Strength${sortColumn === "strength" ? sortArrow() : ""}</th>
-      <th data-col="speed" class="sortable">Speed${sortColumn === "speed" ? sortArrow() : ""}</th>
-      <th data-col="durability" class="sortable">Durability${sortColumn === "durability" ? sortArrow() : ""}</th>
-      <th data-col="power" class="sortable">Power${sortColumn === "power" ? sortArrow() : ""}</th>
-      <th data-col="combat" class="sortable">Combat${sortColumn === "combat" ? sortArrow() : ""}</th>
-      <th data-col="race" class="sortable">Race${sortColumn === "race" ? sortArrow() : ""}</th>
-      <th data-col="gender" class="sortable">Gender${sortColumn === "gender" ? sortArrow() : ""}</th>
-      <th data-col="height" class="sortable">Height${sortColumn === "height" ? sortArrow() : ""}</th>
-      <th data-col="weight" class="sortable">Weight${sortColumn === "weight" ? sortArrow() : ""}</th>
-      <th data-col="placeOfBirth" class="sortable">Place of Birth${sortColumn === "placeOfBirth" ? sortArrow() : ""}</th>
-      <th data-col="alignment" class="sortable">Alignment${sortColumn === "alignment" ? sortArrow() : ""}</th>
-    </tr>
+    <th rowspan="2">Icon</th>
+    <th rowspan="2" data-col="name" class="sortable">Name${sortColumn === "name" ? sortArrow() : ""}</th>
+    <th rowspan="2" data-col="fullName" class="sortable">Full Name${sortColumn === "fullName" ? sortArrow() : ""}</th>
+    
+    <th colspan="6">Power Stats</th>
+
+    <th rowspan="2" data-col="race" class="sortable">Race${sortColumn === "race" ? sortArrow() : ""}</th>
+    <th rowspan="2" data-col="gender" class="sortable">Gender${sortColumn === "gender" ? sortArrow() : ""}</th>
+    <th rowspan="2" data-col="height" class="sortable">Height${sortColumn === "height" ? sortArrow() : ""}</th>
+    <th rowspan="2" data-col="weight" class="sortable">Weight${sortColumn === "weight" ? sortArrow() : ""}</th>
+    <th rowspan="2" data-col="placeOfBirth" class="sortable">Place of Birth${sortColumn === "placeOfBirth" ? sortArrow() : ""}</th>
+    <th rowspan="2" data-col="alignment" class="sortable">Alignment${sortColumn === "alignment" ? sortArrow() : ""}</th>
+  </tr>
+  <tr>
+    <th data-col="intelligence" class="sortable">Intelligence${sortColumn === "intelligence" ? sortArrow() : ""}</th>
+    <th data-col="strength" class="sortable">Strength${sortColumn === "strength" ? sortArrow() : ""}</th>
+    <th data-col="speed" class="sortable">Speed${sortColumn === "speed" ? sortArrow() : ""}</th>
+    <th data-col="durability" class="sortable">Durability${sortColumn === "durability" ? sortArrow() : ""}</th>
+    <th data-col="power" class="sortable">Power${sortColumn === "power" ? sortArrow() : ""}</th>
+    <th data-col="combat" class="sortable">Combat${sortColumn === "combat" ? sortArrow() : ""}</th>
+  </tr>
   `
 
   data.forEach(hero => {
@@ -132,8 +167,8 @@ function renderTable(data) {
       <td>${hero.powerstats.combat}</td>
       <td>${hero.appearance.race}</td>
       <td>${hero.appearance.gender}</td>
-      <td>${hero.appearance.height.join(" / ")}</td>
-      <td>${hero.appearance.weight.join(" / ")}</td>
+      <td>${hero.appearance.height[1]}</td>
+      <td>${hero.appearance.weight[1]}</td>
       <td>${hero.biography.placeOfBirth}</td>
       <td>${hero.biography.alignment}</td>
     `
@@ -192,7 +227,6 @@ search.addEventListener('input', () => {
   }, 300)
 })
 
-window.onload = () => {
+window.onload = fetchData()
   
-  fetchData()
-}
+ 
